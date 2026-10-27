@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sabit Nokta İterasyonu</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .error { color: red; margin-top: 15px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #007bff; color: white; }
+        .result { margin-top: 20px; font-weight: bold; font-size: 1.1em; color: #28a745; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Sabit Nokta İterasyonu Çözücü</h2>
+    
+    <div class="input-group">
+        <label for="gx">g(x) Fonksiyonunu Girin (örn: cos(x) veya (x+2)/3):</label>
+        <input type="text" id="gx" placeholder="g(x) fonksiyonu">
+        <small>Not: f(x)=0 formundaysa, x = g(x) formuna dönüştürüp sağ tarafı girin.</small>
+    </div>
+    <div class="input-group">
+        <label for="x0">Başlangıç Değeri (x₀):</label>
+        <input type="number" step="any" id="x0" value="0">
+    </div>
+    <div class="input-group">
+        <label for="tol">Hata Toleransı (e):</label>
+        <input type="number" step="any" id="tol" value="0.001">
+    </div>
+    <div class="input-group">
+        <label for="maxIter">Maksimum İterasyon Sayısı (Nmax):</label>
+        <input type="number" id="maxIter" value="50">
+    </div>
+    
+    <button onclick="calculate()">Hesapla</button>
+
+    <div id="errorMsg" class="error"></div>
+
+    <table id="resultTable">
+        <thead>
+            <tr>
+                <th>Adım (k)</th>
+                <th>Mevcut x_k</th>
+                <th>Hesaplanan g(x_k)</th>
+                <th>Bağıl Hata |x_{k+1} - x_k|</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="finalResult" class="result"></div>
+</div>
+
+<script>
+    function calculate() {
+        const gStr = document.getElementById('gx').value;
+        const x0 = parseFloat(document.getElementById('x0').value);
+        const tol = parseFloat(document.getElementById('tol').value);
+        const maxIter = parseInt(document.getElementById('maxIter').value);
+
+        const tbody = document.querySelector('#resultTable tbody');
+        tbody.innerHTML = '';
+        document.getElementById('errorMsg').innerText = '';
+        document.getElementById('finalResult').innerText = '';
+
+        if(!gStr) {
+            document.getElementById('errorMsg').innerText = "Lütfen bir fonksiyon girin.";
+            return;
+        }
+
+        try {
+            const g = math.compile(gStr);
+            let xk = x0;
+            let iter = 0;
+            let error = Infinity;
+
+            while (iter < maxIter && error > tol) {
+                let x_next = g.evaluate({x: xk});
+                error = Math.abs(x_next - xk);
+
+                if (!isFinite(x_next) || !isFinite(error) || error > 1e10) {
+                    throw new Error("Fonksiyon ıraksıyor veya değerler aşırı büyüdü (|g'(x)| >= 1 olabilir). Algoritma durduruldu.");
+                }
+
+                iter++;
+                const row = `<tr>
+                    <td>${iter}</td>
+                    <td>${xk.toFixed(6)}</td>
+                    <td>${x_next.toFixed(6)}</td>
+                    <td>${error.toFixed(6)}</td>
+                </tr>`;
+                tbody.insertAdjacentHTML('beforeend', row);
+
+                xk = x_next;
+            }
+
+            if (iter >= maxIter && error > tol) {
+                 document.getElementById('errorMsg').innerText = "Uyarı: Belirlenmiş maksimum iterasyon sayısına ulaşıldı ancak tolerans sağlanamadı.";
+            }
+
+            document.getElementById('finalResult').innerText = `Toplam Adım Sayısı: ${iter} | Ulaşılan Nihai Kök: ${xk.toFixed(6)}`;
+
+        } catch (e) {
+            document.getElementById('errorMsg').innerText = "Hesaplama Hatası: " + e.message;
+        }
+    }
+</script>
+
+</body>
+</html>
